@@ -1,15 +1,17 @@
 import { defineConfig } from "astro/config";
 import tailwindcss from "@tailwindcss/vite";
-import sitemap from "@astrojs/sitemap";
-import vercel from "@astrojs/vercel/serverless";
+import vercel from "@astrojs/vercel";
 
 // https://astro.build/config
 export default defineConfig({
   // IMPORTANT: Replace this with your actual domain when you deploy!
   site: "https://your-story-site.vercel.app",
-  output: "server", // This enables "Instant Updates" without rebuilding!
-  adapter: vercel(),
-  integrations: [sitemap()],
+  output: "server", // Essential for instant Firestore updates
+  adapter: vercel({
+    webAnalytics: {
+      enabled: true,
+    },
+  }),
   vite: {
     plugins: [tailwindcss()],
   },

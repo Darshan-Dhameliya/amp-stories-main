@@ -1,0 +1,43 @@
+[
+  {
+    "slug": "future-of-ai-2026",
+    "title": "The Future of AI in 2026",
+    "coverImage": "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=1080&auto=format&fit=crop",
+    "ctaLinks": {
+      "india": "https://www.amazon.in/dp/B084DWCZ8Q",
+      "global": "https://www.amazon.com/dp/B084DWCZ8Q"
+    },
+    "slides": [
+      {
+        "title": "AI in 2026",
+        "subtitle": "How artificial intelligence is reshaping our world.",
+        "imageUrl": "https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=1080&auto=format&fit=crop",
+        "ctaText": "Read More"
+      },
+      {
+        "title": "Healthcare Revolution",
+        "subtitle": "AI doctors are diagnosing diseases with 99% accuracy.",
+        "imageUrl": "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=1080&auto=format&fit=crop",
+        "ctaText": "Learn More"
+      },
+      {
+        "title": "Autonomous Transport",
+        "subtitle": "Self-driving cars are now the standard in major cities.",
+        "imageUrl": "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?q=80&w=1080&auto=format&fit=crop",
+        "ctaText": "See Cars"
+      },
+      {
+        "title": "Smart Education",
+        "subtitle": "Personalized AI tutors for every student worldwide.",
+        "imageUrl": "https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1080&auto=format&fit=crop",
+        "ctaText": "View Courses"
+      },
+      {
+        "title": "Get Started Today",
+        "subtitle": "Start your journey into AI with these resources.",
+        "imageUrl": "https://images.unsplash.com/photo-1555255707-c07966088b7b?q=80&w=1080&auto=format&fit=crop",
+        "ctaText": "Buy Now"
+      }
+    ]
+  }
+]
