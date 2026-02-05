@@ -12,90 +12,104 @@ const firebaseConfig = {
 };
 
 const hasDeployHook = !!import.meta.env.VERCEL_DEPLOY_HOOK_URL;
+// Simple credential check (In a real app, use Firebase Auth)
+const ADMIN_PASSWORD = import.meta.env.PUBLIC_ADMIN_PASSWORD || "admin123";
 ---
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>Story Creator</title>
+    <title>Story Creator Admin</title>
 </head>
 <body class="bg-zinc-50 text-zinc-900 min-h-screen font-sans">
-    <div class="max-w-4xl mx-auto py-12 px-4">
+    
+    <!-- Login Overlay -->
+    <div id="loginOverlay" class="fixed inset-0 bg-white z-50 flex items-center justify-center p-4">
+        <div class="max-w-md w-full bg-white border border-zinc-200 shadow-xl rounded-2xl p-8 text-center">
+            <h2 class="text-2xl font-bold mb-2">Admin Access</h2>
+            <p class="text-zinc-500 mb-6">Please enter the security credential.</p>
+            <form id="loginForm" class="space-y-4">
+                <input type="password" id="adminPassword" placeholder="Enter Password" class="w-full px-4 py-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <button type="submit" class="w-full bg-zinc-900 text-white font-bold py-3 rounded-xl hover:scale-[1.02] transition-transform">Unlock Dashboard</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 bg-zinc-900 text-white px-6 py-3 rounded-full shadow-2xl z-[100] opacity-0 pointer-events-none transition-all duration-300 flex items-center gap-3 transform translate-y-[-20px]">
+        <span id="toastIcon">✅</span>
+        <span id="toastMessage" class="font-medium">Action successful</span>
+    </div>
+
+    <div id="dashboard" class="max-w-5xl mx-auto py-12 px-4 opacity-0 transition-opacity duration-500">
         
-        <!-- JSON Import Feature -->
-        <div class="bg-blue-50 border border-blue-100 p-6 rounded-xl mb-8">
-            <h3 class="text-lg font-semibold text-blue-900 mb-2 flex items-center gap-2">
-                ⚡ Quick Import
-            </h3>
-            <p class="text-sm text-blue-600 mb-4">Paste your JSON here to auto-fill the form.</p>
-            <textarea 
-                id="jsonInput" 
-                class="w-full h-24 p-3 text-sm font-mono bg-white border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                placeholder='{ "slug": "my-story", "title": "...", "slides": [...] }'
-            ></textarea>
-            <div class="mt-3 text-right">
-                <button 
-                    type="button" 
-                    id="autoFillBtn"
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
-                >
-                    Auto-Fill Form
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-zinc-900">Story Dashboard</h1>
+            <div class="flex gap-3">
+                 <button id="btnCreateNew" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm hidden">
+                    + Create New
                 </button>
+                <a href="/" class="px-4 py-2 bg-white border border-zinc-200 rounded-lg text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors">View Site</a>
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm border border-zinc-200 p-8">
-            <div class="flex justify-between items-center mb-8 pb-4 border-b border-zinc-100">
-                <h1 class="text-2xl font-bold text-zinc-900">Create / Edit Story</h1>
-                <div class="flex gap-2">
-                    <a href="/" class="text-sm font-medium text-zinc-500 hover:text-zinc-800 transition-colors">← Back Home</a>
+        <!-- Stories List -->
+        <div id="storiesListSection" class="mb-12">
+            <h2 class="text-xl font-semibold mb-4 px-1">Recent Stories</h2>
+            <div id="storiesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Stories will be loaded here -->
+                <div class="animate-pulse flex flex-col gap-4">
+                    <div class="h-48 bg-zinc-200 rounded-xl"></div>
+                    <div class="h-4 bg-zinc-200 rounded w-3/4"></div>
                 </div>
             </div>
+        </div>
+
+        <div id="editorSection" class="bg-white rounded-2xl shadow-sm border border-zinc-200 p-8 hidden">
+            <div class="flex justify-between items-center mb-8 pb-4 border-b border-zinc-100">
+                <h2 id="formTitle" class="text-2xl font-bold text-zinc-900">Create New Story</h2>
+                <button type="button" id="closeEditorBtn" class="text-zinc-400 hover:text-zinc-600">Cancel</button>
+            </div>
             
+            <!-- JSON Import Feature -->
+            <div class="bg-blue-50 border border-blue-100 p-6 rounded-xl mb-8">
+                <h3 class="text-lg font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                    ⚡ Quick Import / Export JSON
+                </h3>
+                <textarea 
+                    id="jsonInput" 
+                    class="w-full h-24 p-3 text-sm font-mono bg-white border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                    placeholder='Paste JSON here...'
+                ></textarea>
+                <div class="mt-3 flex gap-2 justify-end">
+                     <button type="button" id="copyJsonBtn" class="text-blue-600 hover:bg-blue-100 px-3 py-1 rounded text-sm font-medium transition-colors">Copy Current</button>
+                    <button type="button" id="autoFillBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">Auto-Fill Form</button>
+                </div>
+            </div>
+
             <form id="storyForm" class="space-y-8">
+                <input type="hidden" name="docId" id="docId" value="">
+                
                 <!-- Metadata -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-zinc-700">Story Slug (URL)</label>
-                        <input 
-                            type="text" 
-                            name="slug" 
-                            required 
-                            placeholder="e.g., ai-revolution-2026"
-                            class="w-full px-3 py-2 border border-zinc-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                        >
+                        <input type="text" name="slug" required placeholder="e.g., ai-revolution-2026" class="w-full px-3 py-2 border border-zinc-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                     </div>
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-zinc-700">Affiliate Link (Global)</label>
-                        <input 
-                            type="url" 
-                            name="globalLink" 
-                            placeholder="https://amazon.com/..."
-                            class="w-full px-3 py-2 border border-zinc-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                        >
+                        <input type="url" name="globalLink" placeholder="https://..." class="w-full px-3 py-2 border border-zinc-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                     </div>
                 </div>
 
                 <div class="space-y-2">
                     <label class="block text-sm font-medium text-zinc-700">Story Title</label>
-                    <input 
-                        type="text" 
-                        name="title" 
-                        required 
-                        placeholder="Main Headline"
-                        class="w-full px-3 py-2 border border-zinc-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                    >
+                    <input type="text" name="title" required placeholder="Main Headline" class="w-full px-3 py-2 border border-zinc-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                 </div>
                 
                 <div class="space-y-2">
                     <label class="block text-sm font-medium text-zinc-700">Cover Image URL</label>
-                    <input 
-                        type="url" 
-                        name="coverImage" 
-                        required 
-                        placeholder="https://images.unsplash.com/..."
-                        class="w-full px-3 py-2 border border-zinc-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                    >
+                    <input type="url" name="coverImage" required placeholder="https://..." class="w-full px-3 py-2 border border-zinc-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                 </div>
 
                 <!-- Slides -->
@@ -105,276 +119,335 @@ const hasDeployHook = !!import.meta.env.VERCEL_DEPLOY_HOOK_URL;
                         <span id="slide-count-badge" class="bg-zinc-100 text-zinc-600 px-2 py-1 rounded-full text-xs font-medium">0 Slides</span>
                     </div>
                     
-                    <div id="slides-container" class="space-y-6">
-                        <!-- Slides will be added here -->
-                    </div>
+                    <div id="slides-container" class="space-y-6"></div>
 
-                    <button 
-                        type="button" 
-                        id="addSlideBtn"
-                        class="w-full mt-6 py-3 border-2 border-dashed border-zinc-300 rounded-xl text-zinc-600 hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-800 transition-all font-medium flex items-center justify-center gap-2"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
-                        Add New Slide
+                    <button type="button" id="addSlideBtn" class="w-full mt-6 py-3 border-2 border-dashed border-zinc-300 rounded-xl text-zinc-600 hover:border-zinc-400 hover:bg-zinc-50 transition-all font-medium flex items-center justify-center gap-2">
+                        + Add New Slide
                     </button>
                 </div>
 
-                <div class="pt-8 border-t border-zinc-100 sticky bottom-0 bg-white -mx-8 px-8 py-4 mt-8 flex flex-col md:flex-row gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-                    <button 
-                        type="submit" 
-                        class="flex-1 bg-zinc-900 hover:bg-black text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
-                    >
-                        <span>💾</span> Save to Firestore
+                <div class="pt-8 border-t border-zinc-100 flex flex-col md:flex-row gap-4">
+                    <button type="submit" id="saveBtn" class="flex-1 bg-zinc-900 hover:bg-black text-white py-3 rounded-xl font-semibold shadow-lg transition-all flex items-center justify-center gap-2">
+                        <span>💾</span> <span id="saveBtnText">Save Story</span>
                     </button>
-
-                    {hasDeployHook && (
-                        <button 
-                            type="button" 
-                            id="redeployBtn"
-                            class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
-                        >
-                            <span>🚀</span> Republish (Update Sitemap)
+                     <button type="button" id="deleteBtn" class="hidden flex-none bg-red-100 hover:bg-red-200 text-red-600 px-6 py-3 rounded-xl font-semibold transition-all">
+                        🗑️ Delete
+                    </button>
+                     {hasDeployHook && (
+                        <button type="button" id="redeployBtn" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold shadow-lg transition-all flex items-center justify-center gap-2">
+                            <span>🚀</span> Republish
                         </button>
                     )}
                 </div>
-                {!hasDeployHook && (
-                    <p class="text-xs text-zinc-400 text-center mt-4">
-                        💡 Tip: Add <code>VERCEL_DEPLOY_HOOK_URL</code> to your .env to enable the "Republish" button.
-                    </p>
-                )}
             </form>
         </div>
     </div>
 
-    <!-- Pass Firestore config to client -->
-    <script is:inline define:vars={{ firebaseConfig }}>
+    <!-- Pass Vars -->
+    <script is:inline define:vars={{ firebaseConfig, ADMIN_PASSWORD }}>
         window.FIREBASE_CONFIG = firebaseConfig;
+        window.REQUIRED_PASSWORD = ADMIN_PASSWORD;
     </script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, getDocs, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-        // Global state to check if Firebase is ready
         let db = null;
-        try {
-            if (window.FIREBASE_CONFIG.apiKey) {
-                const app = initializeApp(window.FIREBASE_CONFIG);
-                db = getFirestore(app);
-                console.log("Firebase initialized successfully");
-            } else {
-                console.warn("Firebase config is missing API key. Firestore features will be disabled.");
+        let authState = false;
+
+        // --- AUTH ---
+        function checkAuth() {
+            const stored = localStorage.getItem('admin_auth');
+            if (stored === window.REQUIRED_PASSWORD) {
+                authState = true;
+                document.getElementById('loginOverlay').remove();
+                document.getElementById('dashboard').classList.remove('opacity-0');
+                initFirebase();
             }
-        } catch (e) {
-            console.error("Firebase init error:", e);
         }
-
-        // Slide Template Function
-        function createSlideHTML(id, data = {}) {
-            return `
-                <div class="slide bg-zinc-50 border border-zinc-200 rounded-xl p-6 relative group transition-all hover:shadow-md" id="slide-${id}">
-                    <div class="flex justify-between items-start mb-4 pb-4 border-b border-zinc-200/60">
-                        <div class="flex items-center gap-3">
-                            <span class="slide-number-badge bg-white border border-zinc-200 text-zinc-500 w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold shadow-sm">
-                                #
-                            </span>
-                            <h4 class="font-medium text-zinc-900">Slide Content</h4>
-                        </div>
-                        <button 
-                            type="button" 
-                            class="remove-slide-btn text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition-colors text-sm font-medium flex items-center gap-1"
-                            data-id="${id}"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
-                            Remove
-                        </button>
-                    </div>
-                    <div class="space-y-4">
-                        <div class="space-y-2">
-                            <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500">Title</label>
-                            <input type="text" name="slides[${id}][title]" value="${data.title || ''}" required class="w-full px-3 py-2 border border-zinc-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white">
-                        </div>
-                        <div class="space-y-2">
-                            <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500">Subtitle</label>
-                            <input type="text" name="slides[${id}][subtitle]" value="${data.subtitle || ''}" class="w-full px-3 py-2 border border-zinc-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white">
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="space-y-2">
-                                <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500">Image URL</label>
-                                <input type="url" name="slides[${id}][imageUrl]" value="${data.imageUrl || data.image || ''}" required class="w-full px-3 py-2 border border-zinc-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white">
-                            </div>
-                            <div class="space-y-2">
-                                <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500">CTA Text</label>
-                                <input type="text" name="slides[${id}][ctaText]" value="${data.ctaText || ''}" placeholder="Optional" class="w-full px-3 py-2 border border-zinc-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function updateBadge() {
-            const slides = document.querySelectorAll('.slide');
-            const badge = document.getElementById('slide-count-badge');
-            if (badge) badge.innerText = `${slides.length} Slides`;
-            slides.forEach((slide, index) => {
-                const badge = slide.querySelector('.slide-number-badge');
-                if (badge) badge.innerText = index + 1;
-            });
-        }
-
-        window.addSlide = (data = {}) => {
-            const container = document.getElementById('slides-container');
-            const uniqueId = Date.now() + Math.random().toString(36).substr(2, 9);
-            const slideHtml = createSlideHTML(uniqueId, data);
-            
-            const div = document.createElement('div');
-            div.innerHTML = slideHtml.trim();
-            const slideEl = div.firstChild;
-            
-            container.appendChild(slideEl);
-            
-            // Attach delete listener
-            slideEl.querySelector('.remove-slide-btn').addEventListener('click', (e) => {
-                const id = e.currentTarget.getAttribute('data-id');
-                document.getElementById(`slide-${id}`).remove();
-                updateBadge();
-            });
-            
-            updateBadge();
-        };
-
-        // Event Listeners
-        document.getElementById('addSlideBtn')?.addEventListener('click', () => window.addSlide());
         
-        document.getElementById('autoFillBtn')?.addEventListener('click', () => {
-            console.log("Auto-fill clicked");
-            const jsonInput = document.getElementById('jsonInput');
-            const jsonStr = jsonInput ? jsonInput.value : "";
-            if (!jsonStr) {
-                alert("Please paste JSON first");
-                return;
-            }
-
-            try {
-                let data = JSON.parse(jsonStr);
-                // Handle array of stories or single story
-                if (Array.isArray(data)) {
-                    data = data[0]; 
-                }
-
-                console.log("Parsed data:", data);
-
-                if (data.slug) document.querySelector('[name="slug"]').value = data.slug;
-                if (data.title) document.querySelector('[name="title"]').value = data.title;
-                if (data.coverImage) document.querySelector('[name="coverImage"]').value = data.coverImage;
-                
-                // Handle both ctaLinks.global and direct globalLink
-                if (data.ctaLinks && data.ctaLinks.global) {
-                    document.querySelector('[name="globalLink"]').value = data.ctaLinks.global;
-                } else if (data.globalLink) {
-                    document.querySelector('[name="globalLink"]').value = data.globalLink;
-                }
-
-                // Clear existing slides
-                document.getElementById('slides-container').innerHTML = '';
-                
-                if (data.slides && Array.isArray(data.slides)) {
-                    data.slides.forEach(slide => window.addSlide(slide));
-                } else {
-                    window.addSlide();
-                }
-                
-                console.log("Form filled successfully");
-            } catch (e) {
-                console.error("JSON parse error:", e);
-                alert("Error parsing JSON: " + e.message);
-            }
-        });
-
-        // Initialize with one slide
-        setTimeout(() => {
-            if (document.querySelectorAll('.slide').length === 0) {
-                window.addSlide();
-            }
-        }, 100);
-
-        // Handle Save to Firestore
-        document.getElementById('storyForm')?.addEventListener('submit', async (e) => {
+        document.getElementById('loginForm')?.addEventListener('submit', (e) => {
             e.preventDefault();
-            
-            if (!db) {
-                alert("Firebase is not configured. Please check your .env file and console.");
-                return;
-            }
-
-            const formData = new FormData(e.target);
-            
-            const slides = [];
-            document.querySelectorAll('.slide').forEach((el) => {
-                const title = el.querySelector('input[name*="[title]"]').value;
-                const subtitle = el.querySelector('input[name*="[subtitle]"]').value;
-                const imageUrl = el.querySelector('input[name*="[imageUrl]"]').value;
-                const ctaText = el.querySelector('input[name*="[ctaText]"]').value;
-                if (title && imageUrl) {
-                    slides.push({ title, subtitle, imageUrl, ctaText });
-                }
-            });
-
-            const storyData = {
-                slug: formData.get('slug'),
-                title: formData.get('title'),
-                coverImage: formData.get('coverImage'),
-                ctaLinks: { global: formData.get('globalLink') },
-                slides,
-                createdAt: serverTimestamp()
-            };
-
-            try {
-                const btn = e.submitter;
-                const originalText = btn.innerHTML;
-                btn.innerHTML = 'Saving to Firestore...';
-                btn.disabled = true;
-
-                await addDoc(collection(db, "stories"), storyData);
-                
-                alert("Saved successfully to Cloud Firestore!");
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-
-            } catch (err) {
-                console.error("Firestore save error:", err);
-                alert("Error saving: " + err.message);
-                e.submitter.innerHTML = 'Error';
-                e.submitter.disabled = false;
+            const input = document.getElementById('adminPassword').value;
+            if (input === window.REQUIRED_PASSWORD) {
+                localStorage.setItem('admin_auth', input);
+                checkAuth();
+                showToast('Welcome back, Admin!');
+            } else {
+                alert('Invalid Credentials');
             }
         });
 
-        // Handle Redeploy (Vercel Hook)
-        document.getElementById('redeployBtn')?.addEventListener('click', async (e) => {
-            if (!confirm("This will trigger a full rebuild of your site to update the sitemap. Continue?")) return;
+        // Initialize
+        checkAuth();
 
-            const btn = e.currentTarget;
+        // --- FIREBASE & APP LOGIC ---
+        function initFirebase() {
+            try {
+                if (window.FIREBASE_CONFIG.apiKey) {
+                    const app = initializeApp(window.FIREBASE_CONFIG);
+                    db = getFirestore(app);
+                    console.log("Firebase initialized");
+                    loadStories();
+                }
+            } catch (e) {
+                console.error("Firebase Auth Error", e);
+                showToast('Firebase Config Error', 'error');
+            }
+        }
+
+        // --- TOAST SYSTEM ---
+        function showToast(msg, type = 'success') {
+            const el = document.getElementById('toast');
+            const msgEl = document.getElementById('toastMessage');
+            const iconEl = document.getElementById('toastIcon');
+            
+            msgEl.innerText = msg;
+            iconEl.innerText = type === 'success' ? '✅' : '⚠️';
+            el.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-[-20px]');
+            
+            setTimeout(() => {
+                el.classList.add('opacity-0', 'pointer-events-none', 'translate-y-[-20px]');
+            }, 3000);
+        }
+
+        // --- STORIES LIST ---
+        async function loadStories() {
+            const grid = document.getElementById('storiesGrid');
+            grid.innerHTML = '<div class="col-span-full text-center text-zinc-400 py-12">Loading stories...</div>';
+            
+            try {
+                const q = query(collection(db, "stories"), orderBy("createdAt", "desc"));
+                const snapshot = await getDocs(q);
+                
+                grid.innerHTML = '';
+                
+                if (snapshot.empty) {
+                    grid.innerHTML = '<div class="col-span-full text-center text-zinc-400 py-12">No stories found. Create one!</div>';
+                    showEditor(); // Auto open editor if empty
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const card = document.createElement('div');
+                    card.className = "bg-white border border-zinc-200 rounded-xl overflow-hidden hover:shadow-lg transition-all group cursor-pointer";
+                    card.innerHTML = `
+                        <div class="h-40 bg-zinc-100 bg-cover bg-center relative" style="background-image: url('${data.coverImage}')">
+                            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span class="bg-white text-zinc-900 px-3 py-1 rounded-full text-sm font-bold shadow-sm">Edit Story</span>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <h3 class="font-bold text-zinc-900 truncate">${data.title}</h3>
+                            <p class="text-xs text-zinc-500 mt-1 font-mono">/${data.slug}</p>
+                            <p class="text-xs text-zinc-400 mt-2">${data.slides ? data.slides.length : 0} Slides</p>
+                        </div>
+                    `;
+                    card.addEventListener('click', () => editStory(doc.id, data));
+                    grid.appendChild(card);
+                });
+                
+                document.getElementById('btnCreateNew').classList.remove('hidden');
+
+            } catch (e) {
+                console.error("Load Error:", e);
+                grid.innerHTML = `<div class="col-span-full text-red-500">Error loading stories: ${e.message}</div>`;
+            }
+        }
+
+        // --- EDITOR LOGIC ---
+        const editor = document.getElementById('editorSection');
+        const listVis = document.getElementById('storiesListSection');
+        const btnCreate = document.getElementById('btnCreateNew');
+        const form = document.getElementById('storyForm');
+
+        function showEditor(isEdit = false) {
+            editor.classList.remove('hidden');
+            listVis.classList.add('hidden');
+            btnCreate.classList.add('hidden');
+            document.getElementById('formTitle').innerText = isEdit ? 'Edit Story' : 'Create New Story';
+            document.getElementById('saveBtnText').innerText = isEdit ? 'Update Story' : 'Save Story';
+            document.getElementById('deleteBtn').classList.toggle('hidden', !isEdit);
+        }
+
+        function hideEditor() {
+            editor.classList.add('hidden');
+            listVis.classList.remove('hidden');
+            btnCreate.classList.remove('hidden');
+            form.reset();
+            document.getElementById('slides-container').innerHTML = '';
+            document.getElementById('docId').value = '';
+            addSlide(); // Add one empty slide
+        }
+
+        document.getElementById('closeEditorBtn').addEventListener('click', hideEditor);
+        document.getElementById('btnCreateNew').addEventListener('click', () => {
+            document.getElementById('slides-container').innerHTML = '';
+            addSlide();
+            showEditor(false);
+        });
+
+        function editStory(id, data) {
+            document.getElementById('docId').value = id;
+            
+            // Fill Form
+            form.querySelector('[name="slug"]').value = data.slug || '';
+            form.querySelector('[name="title"]').value = data.title || '';
+            form.querySelector('[name="coverImage"]').value = data.coverImage || '';
+            form.querySelector('[name="globalLink"]').value = data.ctaLinks?.global || data.globalLink || '';
+            
+            // Slides
+            const container = document.getElementById('slides-container');
+            container.innerHTML = '';
+            if (data.slides && data.slides.length > 0) {
+                data.slides.forEach(slide => addSlide(slide));
+            } else {
+                addSlide();
+            }
+
+            showEditor(true);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Deletion
+        document.getElementById('deleteBtn').addEventListener('click', async () => {
+             const id = document.getElementById('docId').value;
+             if (!id) return;
+             if (confirm('Are you sure you want to PERMANENTLY delete this story? This cannot be undone.')) {
+                 try {
+                     await deleteDoc(doc(db, "stories", id));
+                     showToast('Story deleted successfully');
+                     hideEditor();
+                     loadStories();
+                 } catch (e) {
+                     alert("Error deleting: " + e.message);
+                 }
+             }
+        });
+
+        // Form Submit (Create/Update)
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('saveBtn');
             const originalText = btn.innerHTML;
-            btn.innerHTML = 'Triggering Rebuild...';
+            btn.innerHTML = 'Processing...';
             btn.disabled = true;
 
             try {
-                const res = await fetch('/api/redeploy', { method: 'POST' });
-                const data = await res.json();
+                const formData = new FormData(e.target);
+                const docId = formData.get('docId');
+                
+                const slides = [];
+                document.querySelectorAll('.slide').forEach((el) => {
+                    const title = el.querySelector('input[name*="[title]"]').value;
+                    const subtitle = el.querySelector('input[name*="[subtitle]"]').value;
+                    const imageUrl = el.querySelector('input[name*="[imageUrl]"]').value;
+                    const ctaText = el.querySelector('input[name*="[ctaText]"]').value;
+                    if (title && imageUrl) {
+                        slides.push({ title, subtitle, imageUrl, ctaText });
+                    }
+                });
 
-                if (res.ok) {
-                    alert("🚀 Redeploy triggered! It will be live in ~2 minutes.");
+                const storyData = {
+                    slug: formData.get('slug'),
+                    title: formData.get('title'),
+                    coverImage: formData.get('coverImage'),
+                    ctaLinks: { global: formData.get('globalLink') },
+                    slides,
+                    updatedAt: serverTimestamp()
+                };
+
+                if (!docId) {
+                    storyData.createdAt = serverTimestamp();
+                    await addDoc(collection(db, "stories"), storyData);
+                    showToast('Story created successfully!');
                 } else {
-                    alert("❌ Error: " + (data.error || "Unknown error"));
+                    await updateDoc(doc(db, "stories", docId), storyData);
+                    showToast('Story updated successfully!');
                 }
+
+                hideEditor();
+                loadStories();
+
             } catch (err) {
-                alert("❌ Connection error: " + err.message);
+                console.error("Save error:", err);
+                alert("Error saving: " + err.message);
             } finally {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
         });
+
+        // Redeploy
+        document.getElementById('redeployBtn')?.addEventListener('click', async () => {
+             if(confirm("Trigger site rebuild?")) {
+                 try {
+                     fetch('/api/redeploy', { method: 'POST' });
+                     showToast("Build triggered! 🚀");
+                 } catch(e) { alert("Error: " + e.message); }
+             }
+        });
+
+        // --- SLIDE HELPERS ---
+        window.addSlide = (data = {}) => {
+            const container = document.getElementById('slides-container');
+            const id = Date.now() + Math.random().toString(36).substr(2, 5);
+            
+            const div = document.createElement('div');
+            div.className = "slide bg-zinc-50 border border-zinc-200 rounded-xl p-6 relative group transition-all hover:shadow-md mb-4";
+            div.innerHTML = `
+                <div class="flex justify-between items-start mb-4 pb-4 border-b border-zinc-200/60">
+                    <span class="bg-white border border-zinc-200 text-zinc-500 w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold shadow-sm index-badge">#</span>
+                    <button type="button" class="text-red-500 hover:text-red-700 text-sm font-medium">Remove Slide</button>
+                </div>
+                <div class="grid gap-4">
+                    <input type="text" name="slides[${id}][title]" value="${data.title || ''}" placeholder="Slide Title" class="w-full px-3 py-2 border border-zinc-300 rounded-lg outline-none focus:border-blue-500">
+                    <input type="text" name="slides[${id}][subtitle]" value="${data.subtitle || ''}" placeholder="Subtitle (Optional)" class="w-full px-3 py-2 border border-zinc-300 rounded-lg outline-none focus:border-blue-500">
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="url" name="slides[${id}][imageUrl]" value="${data.imageUrl || data.image || ''}" placeholder="Image URL" class="w-full px-3 py-2 border border-zinc-300 rounded-lg outline-none focus:border-blue-500">
+                        <input type="text" name="slides[${id}][ctaText]" value="${data.ctaText || ''}" placeholder="CTA Text" class="w-full px-3 py-2 border border-zinc-300 rounded-lg outline-none focus:border-blue-500">
+                    </div>
+                </div>
+            `;
+
+            div.querySelector('button').addEventListener('click', () => {
+                div.remove();
+                updateBadges();
+            });
+
+            container.appendChild(div);
+            updateBadges();
+        };
+
+        function updateBadges() {
+            document.querySelectorAll('.index-badge').forEach((el, i) => el.innerText = i + 1);
+            document.getElementById('slide-count-badge').innerText = `${document.querySelectorAll('.slide').length} Slides`;
+        }
+        
+        // Auto Fill JSON
+        document.getElementById('autoFillBtn').addEventListener('click', () => {
+            try {
+                const val = document.getElementById('jsonInput').value;
+                if(!val) return alert("Paste JSON first");
+                const data = JSON.parse(val);
+                const story = Array.isArray(data) ? data[0] : data;
+                
+                // Populate fields
+                if (story.slug) form.querySelector('[name="slug"]').value = story.slug;
+                if (story.title) form.querySelector('[name="title"]').value = story.title;
+                if (story.coverImage) form.querySelector('[name="coverImage"]').value = story.coverImage;
+                
+                document.getElementById('slides-container').innerHTML = '';
+                if(story.slides) story.slides.forEach(s => addSlide(s));
+                
+                showToast("Form filled from JSON");
+            } catch(e) {
+                alert("Invalid JSON");
+            }
+        });
+        
     </script>
 </body>
 </html>
