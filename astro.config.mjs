@@ -6,10 +6,11 @@ import vercel from "@astrojs/vercel";
 export default defineConfig({
   // Updated with your actual live URL
   site: "https://amp-stories-main.vercel.app",
-  output: "server", // Essential for instant Firestore updates
+  output: "server",
   adapter: vercel({
+    // WE MUST DISABLE THIS for AMP stories because it injects scripts that break validation
     webAnalytics: {
-      enabled: true,
+      enabled: false,
     },
   }),
   vite: {
