@@ -5,8 +5,8 @@ dist/
 .DS_Store
 
 # Build outputs
-apps/*/dist/
-apps/*/.astro/
+.astro/
+.vercel/
 
 # Database
 *.db
@@ -24,4 +24,4 @@ npm-debug.log*
 pnpm-debug.log*
 
 # Generated files
-apps/web/public/images/stories/
+public/images/stories/
