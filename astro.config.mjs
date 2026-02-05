@@ -4,8 +4,8 @@ import vercel from "@astrojs/vercel";
 
 // https://astro.build/config
 export default defineConfig({
-  // IMPORTANT: Replace this with your actual domain when you deploy!
-  site: "https://your-story-site.vercel.app",
+  // Updated with your actual live URL
+  site: "https://amp-stories-main.vercel.app",
   output: "server", // Essential for instant Firestore updates
   adapter: vercel({
     webAnalytics: {
