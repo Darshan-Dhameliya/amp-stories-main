@@ -1,5 +1,31 @@
 ---
-const { title, poster } = Astro.props;
+const { title, poster, slug } = Astro.props;
+const canonicalURL = new URL(Astro.url.pathname, Astro.site || 'http://localhost:4321');
+
+const schemaData = {
+  "@context": "http://schema.org",
+  "@type": "NewsArticle",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": canonicalURL.href
+  },
+  "headline": title.substring(0, 110),
+  "image": [poster],
+  "datePublished": new Date().toISOString(), // In a real app, store this in JSON
+  "dateModified": new Date().toISOString(),
+  "author": {
+    "@type": "Organization",
+    "name": "Web Story Platform"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Web Story Platform",
+    "logo": {
+      "@type": "ImageObject",
+      "url": new URL("/logo.png", canonicalURL).href
+    }
+  }
+};
 ---
 <!doctype html>
 <html amp lang="en">
@@ -7,9 +33,24 @@ const { title, poster } = Astro.props;
     <meta charset="utf-8" />
     <title>{title}</title>
     <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1" />
+    <meta name="description" content={title} />
+    
+    <!-- AMP Scripts -->
     <script async src="https://cdn.ampproject.org/v0.js"></script>
     <script async custom-element="amp-story" src="https://cdn.ampproject.org/v0/amp-story-1.0.js"></script>
-    <link rel="canonical" href={Astro.url} />
+    
+    <!-- Canonical -->
+    <link rel="canonical" href={canonicalURL} />
+    
+    <!-- Schema.org for Google Discovery -->
+    <script type="application/ld+json" set:html={JSON.stringify(schemaData)}></script>
+
+    <!-- Open Graph / SEO -->
+    <meta property="og:title" content={title} />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:image" content={poster} />
+
     <style amp-boilerplate>body{-webkit-animation:-amp-start 8s steps(1,end) 0s 1 normal both;-moz-animation:-amp-start 8s steps(1,end) 0s 1 normal both;-ms-animation:-amp-start 8s steps(1,end) 0s 1 normal both;animation:-amp-start 8s steps(1,end) 0s 1 normal both}@-webkit-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@-moz-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@-ms-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@-o-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}</style><noscript><style amp-boilerplate>body{-webkit-animation:none;-moz-animation:none;-ms-animation:none;animation:none}</style></noscript>
     <style amp-custom>
       amp-story {

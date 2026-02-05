@@ -1,9 +1,15 @@
 import { defineConfig } from "astro/config";
-
 import tailwindcss from "@tailwindcss/vite";
+import sitemap from "@astrojs/sitemap";
+import vercel from "@astrojs/vercel/serverless";
 
 // https://astro.build/config
 export default defineConfig({
+  // IMPORTANT: Replace this with your actual domain when you deploy!
+  site: "https://your-story-site.vercel.app",
+  output: "server", // This enables "Instant Updates" without rebuilding!
+  adapter: vercel(),
+  integrations: [sitemap()],
   vite: {
     plugins: [tailwindcss()],
   },

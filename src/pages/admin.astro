@@ -1,5 +1,15 @@
 ---
 import '../styles/global.css';
+
+// Pass environment variables to the client side
+const firebaseConfig = {
+  apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY || "",
+  authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN || "",
+  projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID || "",
+  storageBucket: import.meta.env.PUBLIC_FIREBASE_STORAGE_BUCKET || "",
+  messagingSenderId: import.meta.env.PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
+  appId: import.meta.env.PUBLIC_FIREBASE_APP_ID || ""
+};
 ---
 <html lang="en">
 <head>
@@ -24,7 +34,7 @@ import '../styles/global.css';
             <div class="mt-3 text-right">
                 <button 
                     type="button" 
-                    onclick="fillFormFromJSON()"
+                    id="autoFillBtn"
                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
                 >
                     Auto-Fill Form
@@ -94,7 +104,7 @@ import '../styles/global.css';
 
                     <button 
                         type="button" 
-                        onclick="addSlide()"
+                        id="addSlideBtn"
                         class="w-full mt-6 py-3 border-2 border-dashed border-zinc-300 rounded-xl text-zinc-600 hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-800 transition-all font-medium flex items-center justify-center gap-2"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
@@ -107,15 +117,37 @@ import '../styles/global.css';
                         type="submit" 
                         class="w-full bg-zinc-900 hover:bg-black text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
                     >
-                        <span>💾</span> Save Story
+                        <span>💾</span> Save to Firestore
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <script is:inline>
-        // Template for a slide
+    <!-- Pass Firestore config to client -->
+    <script is:inline define:vars={{ firebaseConfig }}>
+        window.FIREBASE_CONFIG = firebaseConfig;
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+        // Global state to check if Firebase is ready
+        let db = null;
+        try {
+            if (window.FIREBASE_CONFIG.apiKey) {
+                const app = initializeApp(window.FIREBASE_CONFIG);
+                db = getFirestore(app);
+                console.log("Firebase initialized successfully");
+            } else {
+                console.warn("Firebase config is missing API key. Firestore features will be disabled.");
+            }
+        } catch (e) {
+            console.error("Firebase init error:", e);
+        }
+
+        // Slide Template Function
         function createSlideHTML(id, data = {}) {
             return `
                 <div class="slide bg-zinc-50 border border-zinc-200 rounded-xl p-6 relative group transition-all hover:shadow-md" id="slide-${id}">
@@ -128,56 +160,30 @@ import '../styles/global.css';
                         </div>
                         <button 
                             type="button" 
-                            class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition-colors text-sm font-medium flex items-center gap-1"
-                            onclick="removeSlide('${id}')"
+                            class="remove-slide-btn text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition-colors text-sm font-medium flex items-center gap-1"
+                            data-id="${id}"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
                             Remove
                         </button>
                     </div>
-                    
                     <div class="space-y-4">
                         <div class="space-y-2">
                             <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500">Title</label>
-                            <input 
-                                type="text" 
-                                name="slides[${id}][title]" 
-                                value="${data.title || ''}" 
-                                required
-                                class="w-full px-3 py-2 border border-zinc-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
-                            >
+                            <input type="text" name="slides[${id}][title]" value="${data.title || ''}" required class="w-full px-3 py-2 border border-zinc-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white">
                         </div>
-                        
                         <div class="space-y-2">
                             <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500">Subtitle</label>
-                            <input 
-                                type="text" 
-                                name="slides[${id}][subtitle]" 
-                                value="${data.subtitle || ''}"
-                                class="w-full px-3 py-2 border border-zinc-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
-                            >
+                            <input type="text" name="slides[${id}][subtitle]" value="${data.subtitle || ''}" class="w-full px-3 py-2 border border-zinc-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white">
                         </div>
-                        
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="space-y-2">
                                 <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500">Image URL</label>
-                                <input 
-                                    type="url" 
-                                    name="slides[${id}][imageUrl]" 
-                                    value="${data.imageUrl || ''}" 
-                                    required
-                                    class="w-full px-3 py-2 border border-zinc-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
-                                >
+                                <input type="url" name="slides[${id}][imageUrl]" value="${data.imageUrl || data.image || ''}" required class="w-full px-3 py-2 border border-zinc-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white">
                             </div>
                             <div class="space-y-2">
                                 <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500">CTA Text</label>
-                                <input 
-                                    type="text" 
-                                    name="slides[${id}][ctaText]" 
-                                    value="${data.ctaText || ''}" 
-                                    placeholder="Optional"
-                                    class="w-full px-3 py-2 border border-zinc-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
-                                >
+                                <input type="text" name="slides[${id}][ctaText]" value="${data.ctaText || ''}" placeholder="Optional" class="w-full px-3 py-2 border border-zinc-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white">
                             </div>
                         </div>
                     </div>
@@ -185,134 +191,138 @@ import '../styles/global.css';
             `;
         }
 
-        window.addSlide = (data = {}) => {
-            const container = document.getElementById('slides-container');
-            const div = document.createElement('div');
-            // Use a timestamp to ensure unique IDs even if we delete and add
-            const uniqueId = Date.now() + Math.random().toString(36).substr(2, 9);
-            div.innerHTML = createSlideHTML(uniqueId, data);
-            
-            container.appendChild(div.firstElementChild);
-            updateBadge();
-        };
-
-        window.removeSlide = (id) => {
-            const el = document.getElementById(`slide-${id}`);
-            if (el) {
-                el.remove();
-                updateBadge();
-            }
-        };
-        
         function updateBadge() {
             const slides = document.querySelectorAll('.slide');
             document.getElementById('slide-count-badge').innerText = `${slides.length} Slides`;
-            
-            // Update numbers
             slides.forEach((slide, index) => {
                 const badge = slide.querySelector('.slide-number-badge');
                 if (badge) badge.innerText = index + 1;
             });
         }
 
-        // JSON Import Logic
-        window.fillFormFromJSON = () => {
+        // Add slide function attached to window
+        window.addSlide = (data = {}) => {
+            const container = document.getElementById('slides-container');
+            const uniqueId = Date.now() + Math.random().toString(36).substr(2, 9);
+            const slideHtml = createSlideHTML(uniqueId, data);
+            
+            const div = document.createElement('div');
+            div.innerHTML = slideHtml.trim();
+            const slideEl = div.firstChild;
+            
+            container.appendChild(slideEl);
+            
+            // Attach delete listener
+            slideEl.querySelector('.remove-slide-btn').addEventListener('click', (e) => {
+                const id = e.currentTarget.getAttribute('data-id');
+                document.getElementById(`slide-${id}`).remove();
+                updateBadge();
+            });
+            
+            updateBadge();
+        };
+
+        // Event Listeners
+        document.getElementById('addSlideBtn').addEventListener('click', () => window.addSlide());
+        
+        document.getElementById('autoFillBtn').addEventListener('click', () => {
+            console.log("Auto-fill clicked");
             const jsonStr = document.getElementById('jsonInput').value;
-            if (!jsonStr.trim()) {
-                alert("Please paste some JSON first!");
+            if (!jsonStr) {
+                alert("Please paste JSON first");
                 return;
             }
 
             try {
                 let data = JSON.parse(jsonStr);
-                
+                // Handle array of stories or single story
                 if (Array.isArray(data)) {
-                    data = data[data.length - 1];
+                    data = data[0]; 
                 }
+
+                console.log("Parsed data:", data);
 
                 if (data.slug) document.querySelector('[name="slug"]').value = data.slug;
                 if (data.title) document.querySelector('[name="title"]').value = data.title;
                 if (data.coverImage) document.querySelector('[name="coverImage"]').value = data.coverImage;
                 
+                // Handle both ctaLinks.global and direct globalLink
                 if (data.ctaLinks && data.ctaLinks.global) {
                     document.querySelector('[name="globalLink"]').value = data.ctaLinks.global;
+                } else if (data.globalLink) {
+                    document.querySelector('[name="globalLink"]').value = data.globalLink;
                 }
 
+                // Clear existing slides
                 document.getElementById('slides-container').innerHTML = '';
-
+                
                 if (data.slides && Array.isArray(data.slides)) {
-                    data.slides.forEach(slide => {
-                        window.addSlide(slide);
-                    });
+                    data.slides.forEach(slide => window.addSlide(slide));
                 } else {
                     window.addSlide();
                 }
                 
+                console.log("Form filled successfully");
             } catch (e) {
-                console.error(e);
+                console.error("JSON parse error:", e);
                 alert("Error parsing JSON: " + e.message);
             }
-        };
+        });
 
-        // Initialize
-        addSlide();
+        // Initialize with one slide after a small delay to ensure DOM is ready
+        setTimeout(() => {
+            if (document.querySelectorAll('.slide').length === 0) {
+                window.addSlide();
+            }
+        }, 100);
 
-        // Form Submit
+        // Handle Submit
         document.getElementById('storyForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            if (!db) {
+                alert("Firebase is not configured. Please check your .env file and console.");
+                return;
+            }
+
             const formData = new FormData(e.target);
             
-            const data = {
-                slug: formData.get('slug'),
-                title: formData.get('title'),
-                coverImage: formData.get('coverImage'),
-                ctaLinks: {
-                    global: formData.get('globalLink')
-                },
-                slides: []
-            };
-
             const slides = [];
-            const slideElements = document.querySelectorAll('.slide');
-            
-            slideElements.forEach((el) => {
+            document.querySelectorAll('.slide').forEach((el) => {
                 const title = el.querySelector('input[name*="[title]"]').value;
                 const subtitle = el.querySelector('input[name*="[subtitle]"]').value;
                 const imageUrl = el.querySelector('input[name*="[imageUrl]"]').value;
                 const ctaText = el.querySelector('input[name*="[ctaText]"]').value;
-
                 if (title && imageUrl) {
-                    const slide = { title, imageUrl };
-                    if (subtitle) slide.subtitle = subtitle;
-                    if (ctaText) slide.ctaText = ctaText;
-                    slides.push(slide);
+                    slides.push({ title, subtitle, imageUrl, ctaText });
                 }
             });
-            data.slides = slides;
+
+            const storyData = {
+                slug: formData.get('slug'),
+                title: formData.get('title'),
+                coverImage: formData.get('coverImage'),
+                ctaLinks: { global: formData.get('globalLink') },
+                slides,
+                createdAt: serverTimestamp()
+            };
 
             try {
                 const btn = e.submitter;
                 const originalText = btn.innerHTML;
-                btn.innerHTML = 'Saving...';
+                btn.innerHTML = 'Saving to Firestore...';
                 btn.disabled = true;
 
-                const res = await fetch('/api/save-story', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
+                await addDoc(collection(db, "stories"), storyData);
                 
-                if (res.ok) {
-                    window.location.href = '/';
-                } else {
-                    const err = await res.text();
-                    alert('Error: ' + err);
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                }
+                alert("Saved successfully to Cloud Firestore!");
+                window.location.href = '/';
+
             } catch (err) {
-                alert('Connection error');
-                console.error(err);
+                console.error("Firestore save error:", err);
+                alert("Error saving: " + err.message);
+                e.submitter.innerHTML = 'Error';
+                e.submitter.disabled = false;
             }
         });
     </script>

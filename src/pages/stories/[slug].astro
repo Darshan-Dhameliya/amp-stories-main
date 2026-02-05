@@ -1,23 +1,33 @@
 ---
+export const prerender = false; // Enable live fetching on Vercel
+
 import StoryLayout from '../../layouts/StoryLayout.astro';
 import StoryPage from '../../components/StoryPage.astro';
-import stories from '../../data/stories.json';
+import { db } from '../../lib/firebase';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 
-export function getStaticPaths() {
-  return stories.map(story => ({
-    params: { slug: story.slug },
-    props: { story },
-  }));
+const { slug } = Astro.params;
+
+// Fetch story from Firestore by slug IN REAL TIME
+let story = null;
+try {
+  const q = query(collection(db, "stories"), where("slug", "==", slug), limit(1));
+  const querySnapshot = await getDocs(q);
+  if (!querySnapshot.empty) {
+    story = querySnapshot.docs[0].data();
+  }
+} catch (e) {
+  console.error("Error fetching story:", e);
 }
 
-const { story } = Astro.props;
+if (!story) {
+  return Astro.redirect('/404');
+}
 
-// Simple region detection (for static build, we default to global, or use client-side script if needed)
-// Since we are moving to JSON file, we might just default to global link for now
-const ctaLink = story.ctaLinks.global; 
+const ctaLink = story.ctaLinks?.global || '#'; 
 ---
 
-<StoryLayout title={story.title} poster={story.coverImage}>
+<StoryLayout title={story.title} poster={story.coverImage} slug={slug}>
   {story.slides.map((slide, index) => (
     <StoryPage
       id={`page-${index}`}
