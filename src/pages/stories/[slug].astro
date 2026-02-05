@@ -1,0 +1,31 @@
+---
+import StoryLayout from '../../layouts/StoryLayout.astro';
+import StoryPage from '../../components/StoryPage.astro';
+import stories from '../../data/stories.json';
+
+export function getStaticPaths() {
+  return stories.map(story => ({
+    params: { slug: story.slug },
+    props: { story },
+  }));
+}
+
+const { story } = Astro.props;
+
+// Simple region detection (for static build, we default to global, or use client-side script if needed)
+// Since we are moving to JSON file, we might just default to global link for now
+const ctaLink = story.ctaLinks.global; 
+---
+
+<StoryLayout title={story.title} poster={story.coverImage}>
+  {story.slides.map((slide, index) => (
+    <StoryPage
+      id={`page-${index}`}
+      image={slide.imageUrl}
+      title={slide.title}
+      subtitle={slide.subtitle}
+      ctaText={slide.ctaText}
+      ctaLink={index === story.slides.length - 1 ? ctaLink : undefined} 
+    />
+  ))}
+</StoryLayout>

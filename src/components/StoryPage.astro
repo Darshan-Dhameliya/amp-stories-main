@@ -1,0 +1,56 @@
+---
+interface Props {
+  id: string;
+  image: string;
+  title: string;
+  subtitle?: string;
+  ctaText?: string;
+  ctaLink?: string;
+}
+
+const { id, image, title, subtitle, ctaText, ctaLink } = Astro.props;
+---
+
+<amp-story-page id={id}>
+  <amp-story-grid-layer template="fill">
+    <amp-img src={image}
+      width="720"
+      height="1280"
+      layout="responsive">
+    </amp-img>
+  </amp-story-grid-layer>
+
+  <amp-story-grid-layer template="vertical">
+    <div class="content-wrapper">
+      <h1 animate-in="fly-in-left" animate-in-delay="0.3s">{title}</h1>
+      {subtitle && <p animate-in="fade-in" animate-in-delay="0.6s">{subtitle}</p>}
+    </div>
+  </amp-story-grid-layer>
+
+  {ctaLink && ctaText && (
+    <amp-story-page-outlink layout="nodisplay">
+      <a href={ctaLink}>{ctaText}</a>
+    </amp-story-page-outlink>
+  )}
+</amp-story-page>
+
+<style>
+  .content-wrapper {
+    background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+    padding: 20px;
+    align-self: end;
+    text-align: center;
+    padding-bottom: 60px;
+  }
+  h1 {
+    font-size: 2em;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  }
+  p {
+    font-size: 1.2em;
+    line-height: 1.5;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+  }
+</style>
