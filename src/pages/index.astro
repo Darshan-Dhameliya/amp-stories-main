@@ -4,6 +4,7 @@ export const prerender = false; // Enable live fetching on Vercel
 import '../styles/global.css';
 import { db } from '../lib/firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import Analytics from '@vercel/analytics/astro';
 
 // This now runs LIVE on the server
 const stories = [];
@@ -66,5 +67,6 @@ try {
         </div>
       )}
     </div>
+    <Analytics />
 	</body>
 </html>
