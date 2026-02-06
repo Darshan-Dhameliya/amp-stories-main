@@ -3,8 +3,8 @@ import { collection, getDocs } from "firebase/firestore";
 
 export const prerender = false;
 
-export async function GET({ site }) {
-  const stories = [];
+export async function GET({ site }: { site: string }) {
+  const stories: any[] = [];
   try {
     const querySnapshot = await getDocs(collection(db, "stories"));
     querySnapshot.forEach((doc) => {
