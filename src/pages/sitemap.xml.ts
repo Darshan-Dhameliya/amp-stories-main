@@ -15,7 +15,7 @@ export async function GET({ site }) {
   }
 
   // Fallback if site is not defined in config
-  const baseUrl = site || "https://your-story-site.vercel.app";
+  const baseUrl = site || "https://awesome-amp-stories.vercel.app";
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

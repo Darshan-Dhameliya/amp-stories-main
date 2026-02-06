@@ -29,9 +29,9 @@ This setup gives you **Instant Updates**. When you save a story in the Admin Pan
 
 ## 2. Setting Up SEO Discovery
 
-1.  Once you have your live Vercel URL (e.g., `https://my-stories.vercel.app`), update your `astro.config.mjs`:
+1.  Once you have your live Vercel URL (e.g., `https://awesome-amp-stories.vercel.app`), update your `astro.config.mjs`:
     ```javascript
-    site: "https://my-stories.vercel.app", 
+    site: "https://awesome-amp-stories.vercel.app", 
     ```
 2.  Commit and push this change. Vercel will rebuild the sitemap with your correct domain.
 
@@ -39,7 +39,7 @@ This setup gives you **Instant Updates**. When you save a story in the Admin Pan
 
 ### A. Verify with Google Search Console
 1.  Add your Vercel URL as a new property.
-2.  Submit your sitemap: `https://your-domain.vercel.app/sitemap-index.xml`.
+2.  Submit your sitemap: `https://awesome-amp-stories.vercel.app/sitemap-index.xml`.
 
 ### B. Validating AMP
 1.  Take any of your live story URLs (e.g., `.../stories/my-story`).
@@ -48,7 +48,7 @@ This setup gives you **Instant Updates**. When you save a story in the Admin Pan
 ---
 
 **Summary of Workflow:**
-1.  Go to `https://your-domain.vercel.app/admin`.
+1.  Go to `https://awesome-amp-stories.vercel.app/admin`.
 2.  Create/Import a Story.
 3.  Click **Save**.
-4.  **Boom!** View it live at `https://your-domain.vercel.app/stories/slug` instantly. No terminal needed!
+4.  **Boom!** View it live at `https://awesome-amp-stories.vercel.app/stories/slug` instantly. No terminal needed!
