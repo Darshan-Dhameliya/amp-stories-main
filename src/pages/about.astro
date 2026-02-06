@@ -1,0 +1,59 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+---
+
+<PageLayout title="About Us & Contact">
+	<article class="max-w-none">
+		<div class="text-center mb-16">
+			<h1 class="text-5xl font-black text-zinc-900 mb-4 tracking-tight">About Web Story Platform</h1>
+			<p class="text-xl text-zinc-500 max-w-2xl mx-auto italic">Bringing visual storytelling to the mobile web, one tap at a time.</p>
+		</div>
+
+		<div class="grid md:grid-cols-2 gap-12 mb-20">
+			<div class="space-y-6">
+				<h2 class="text-3xl font-bold text-zinc-900 font-serif lowercase italic tracking-tight underline decoration-blue-500 decoration-4 underline-offset-8">Our Mission</h2>
+				<p class="text-lg text-zinc-700 leading-relaxed">
+					Web Story Platform was created to bridge the gap between long-form articles and quick social media snippets. We believe that information should be visually engaging, fast-loading, and easy to consume on the go.
+				</p>
+				<p class="text-lg text-zinc-700 leading-relaxed">
+					Our AMP-powered stories ensure that no matter where you are or what device you're using, you get a premium, immersive experience without the wait.
+				</p>
+			</div>
+			<div class="bg-gradient-to-br from-blue-600 to-purple-600 rounded-3xl p-8 text-white flex flex-col justify-center shadow-xl">
+				<h3 class="text-2xl font-bold mb-4 uppercase tracking-tighter">Why Web Stories?</h3>
+				<ul class="space-y-4 font-medium">
+					<li class="flex items-center gap-3">
+						<span class="bg-white/20 p-2 rounded-full">⚡</span>
+						Fastest load times on mobile.
+					</li>
+					<li class="flex items-center gap-3">
+						<span class="bg-white/20 p-2 rounded-full">🎨</span>
+						Visually immersive design.
+					</li>
+					<li class="flex items-center gap-3">
+						<span class="bg-white/20 p-2 rounded-full">🧠</span>
+						Concise, high-value information.
+					</li>
+				</ul>
+			</div>
+		</div>
+
+		<div class="bg-zinc-100 rounded-3xl p-12 text-center border border-zinc-200 shadow-inner">
+			<h2 class="text-3xl font-bold text-zinc-900 mb-6">Contact Us</h2>
+			<p class="text-xl text-zinc-600 mb-10">Have questions, feedback, or a story suggestion? We'd love to hear from you.</p>
+			
+			<div class="flex flex-col md:flex-row justify-center gap-8">
+				<div class="bg-white p-6 rounded-2xl shadow-sm border border-zinc-200 flex-1">
+					<span class="text-3xl mb-4 block">📧</span>
+					<h4 class="font-bold text-zinc-900 mb-2 uppercase tracking-widest text-sm">Email Us</h4>
+					<p class="text-blue-600 font-bold">contact@your-domain.vercel.app</p>
+				</div>
+				<div class="bg-white p-6 rounded-2xl shadow-sm border border-zinc-200 flex-1">
+					<span class="text-3xl mb-4 block">📍</span>
+					<h4 class="font-bold text-zinc-900 mb-2 uppercase tracking-widest text-sm">Location</h4>
+					<p class="text-zinc-500 font-medium">Digital Nomads, Worldwide</p>
+				</div>
+			</div>
+		</div>
+	</article>
+</PageLayout>
