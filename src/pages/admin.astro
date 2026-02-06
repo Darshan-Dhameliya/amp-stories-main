@@ -553,6 +553,18 @@ Generate the JSON object now.`;
             document.getElementById('slide-count-badge').innerText = `${document.querySelectorAll('.slide').length} Slides`;
         }
         
+        // Helper to strip markdown [link](url) from URLs
+        function cleanUrl(str) {
+            if (!str || typeof str !== 'string') return str;
+            // Matches [text](url) and captures url
+            const markdownMatch = str.match(/\[.*?\]\((https?:\/\/[^)]+)\)/);
+            if (markdownMatch) return markdownMatch[1].trim();
+            // Just in case it's ONLY inside brackets [url]
+            const bracketMatch = str.match(/\[(https?:\/\/[^\]]+)\]/);
+            if (bracketMatch) return bracketMatch[1].trim();
+            return str.trim();
+        }
+
         // Auto Fill JSON
         document.getElementById('autoFillBtn').addEventListener('click', () => {
             try {
@@ -561,17 +573,27 @@ Generate the JSON object now.`;
                 const data = JSON.parse(val);
                 const story = Array.isArray(data) ? data[0] : data;
                 
-                // Populate fields
+                // Populate fields with cleaned URLs
                 if (story.slug) form.querySelector('[name="slug"]').value = story.slug;
                 if (story.title) form.querySelector('[name="title"]').value = story.title;
-                if (story.coverImage) form.querySelector('[name="coverImage"]').value = story.coverImage;
+                if (story.coverImage) form.querySelector('[name="coverImage"]').value = cleanUrl(story.coverImage);
+                
+                const globalLink = story.ctaLinks?.global || story.globalLink;
+                if (globalLink) form.querySelector('[name="globalLink"]').value = cleanUrl(globalLink);
                 
                 document.getElementById('slides-container').innerHTML = '';
-                if(story.slides) story.slides.forEach(s => addSlide(s));
+                if(story.slides) {
+                    story.slides.forEach(s => {
+                        // Clean slide image URL before adding
+                        const cleanedSlide = { ...s, imageUrl: cleanUrl(s.imageUrl || s.image) };
+                        addSlide(cleanedSlide);
+                    });
+                }
                 
-                showToast("Form filled from JSON");
+                showToast("Form filled and URLs cleaned! ✨");
             } catch(e) {
-                alert("Invalid JSON");
+                console.error(e);
+                alert("Invalid JSON format");
             }
         });
         
