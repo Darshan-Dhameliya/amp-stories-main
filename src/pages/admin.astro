@@ -487,18 +487,31 @@ Generate the JSON object now.`;
             selectedTopic = e.target.value || "AI_PICK_TRENDING";
         });
 
-        function openAI(platform) {
+        async function openAI(platform) {
             const prompt = aiPromptBase.replace('{TOPIC}', selectedTopic);
+            
+            // Gemini doesn't support URL params well, so we always copy to clipboard first
+            try {
+                await navigator.clipboard.writeText(prompt);
+                showToast('Prompt copied to clipboard! 📋', 'success');
+            } catch (err) {
+                console.error('Failed to copy prompt:', err);
+            }
+
             const encodedPrompt = encodeURIComponent(prompt);
             let url = '';
             
             if (platform === 'chatgpt') {
+                // ChatGPT supports query params but limited in length
                 url = `https://chatgpt.com/?q=${encodedPrompt}`;
             } else {
-                url = `https://gemini.google.com/app?prompt=${encodedPrompt}`;
+                // Gemini doesn't support query params, user must paste
+                url = `https://gemini.google.com/app`;
             }
             
-            window.open(url, '_blank');
+            setTimeout(() => {
+                window.open(url, '_blank');
+            }, 800);
         }
 
         document.getElementById('btnChatGPT').addEventListener('click', () => openAI('chatgpt'));
